@@ -1,4 +1,7 @@
-using System;
+﻿using System;
+using System.Diagnostics;
+using System.Threading;
+using static System.Console;
 
 class Snake
 {
@@ -70,57 +73,48 @@ class Snake
         public static Vector2 NextPosition;
     }
 
-    enum Horizontal
+    enum YDirection
     {
         Up = -1,
         Stop,
         Down
     }
 
-    enum Vertical
+    enum XDirection
     {
-        Right = -1,
+        Left = -1,
         Stop,
-        Left
+        Right
     }
 
     Vector2 CurrentCursorPos = new Vector2(1, 1);
-    Vector2 LastMove;
+    Vector2 LastMove = new Vector2(1, 0);
     bool isOver = false;
     bool isEating = true;
-    int Width = 140;
-    int Height = 45;
+    int Width = 120;
+    int Height = 40;
     int Score = 0;
 
     static void Main()
     {
         Random random = new Random();
         Snake noName = new Snake();
+        //noName.DrawBorder();
         noName.Setup();
         noName.DrawSnake();
         while (!noName.isOver)
         {
             if(noName.isEating)
                 noName.DrawFruit(random);
-            if (Console.ReadKey(true).Key == ConsoleKey.W)
+            if (KeyAvailable)
             {
-                noName.MoveSnake(Horizontal.Up, Vertical.Stop);
-                //noName.LastMove = new Vector2((int)Horizontal.Up, (int)Vertical.Stop);
-            } 
-            if (Console.ReadKey(true).Key == ConsoleKey.S)
+                var key = ReadKey(true).Key;
+                noName.MoveSnake(noName.DirectionMove(key));
+            }
+            var Timer = Stopwatch.StartNew();
+            while (Timer.ElapsedMilliseconds <= 500)
             {
-                noName.MoveSnake(Horizontal.Down, Vertical.Stop);
-                //noName.LastMove = new Vector2((int)Horizontal.Down, (int)Vertical.Stop);
-            }               
-            if (Console.ReadKey(true).Key == ConsoleKey.A)
-            {
-                noName.MoveSnake(Horizontal.Stop, Vertical.Right);
-                //noName.LastMove = new Vector2((int)Horizontal.Stop, (int)Vertical.Right);
-            }                
-            if (Console.ReadKey(true).Key == ConsoleKey.D)
-            {
-                noName.MoveSnake(Horizontal.Stop, Vertical.Left);
-                //noName.LastMove = new Vector2((int)Horizontal.Stop, (int)Vertical.Left);
+                noName.MoveSnake(noName.LastMove);
             }
         }
         noName.GameOver();
@@ -132,10 +126,10 @@ class Snake
     /// <param name="rand">Przyjmuje zainicjonowaną losowość</param>
     void DrawFruit(Random rand)
     {
-        Fruit.Cords = new Vector2(rand.Next(Width), rand.Next(Height));
+        Fruit.Cords = new Vector2(rand.Next(1, Width - 1), rand.Next(1, Height - 1));
         Fruit.LastPos = Fruit.Cords;
-        Console.SetCursorPosition(Fruit.Cords.X, Fruit.Cords.Y);
-        Console.Write(Fruit.Ico);
+        SetCursorPosition(Fruit.Cords.X, Fruit.Cords.Y);
+        Write(Fruit.Ico);
         isEating = false;
     }
 
@@ -144,36 +138,68 @@ class Snake
     /// </summary>
     void DrawSnake()
     {
-        Console.SetCursorPosition(1, 1);
+        SetCursorPosition(1, 1);
         PSnake.CurrentPosition = new Vector2(1, 1);
-        Console.Write(PSnake.Ico);
+        Write(PSnake.Ico);
     }
 
-    void MoveSnake(Horizontal horizontal, Vertical vertical)
+    void MoveSnake(Vector2 vector2)
     {
-        if (PSnake.CurrentPosition.X == 0 || PSnake.CurrentPosition.X >= Width-4 || PSnake.CurrentPosition.Y == 0 || PSnake.CurrentPosition.Y >= Height-2)
+        if (PSnake.CurrentPosition.X == 0 || PSnake.CurrentPosition.X >= Width - 3 || PSnake.CurrentPosition.Y == 0 || PSnake.CurrentPosition.Y >= Height - 1)
         {
             isOver = true;
             return;
         }
-        if(PSnake.CurrentPosition == Fruit.Cords)
+        if (PSnake.CurrentPosition == Fruit.Cords)
         {
             Score++;
             isEating = true;
         }
-        Console.SetCursorPosition(PSnake.CurrentPosition.X, PSnake.CurrentPosition.Y);
-        Console.Write(" ");
-        PSnake.CurrentPosition = new Vector2(CurrentCursorPos.X + (int)vertical, CurrentCursorPos.Y + (int)horizontal);
-        Console.SetCursorPosition(PSnake.CurrentPosition.X, PSnake.CurrentPosition.Y);
-        Console.Write(PSnake.Ico);
+        SetCursorPosition(PSnake.CurrentPosition.X, PSnake.CurrentPosition.Y);
+        Write(" ");
+        PSnake.CurrentPosition = new Vector2(CurrentCursorPos.X + vector2.X, CurrentCursorPos.Y + vector2.Y);
+        SetCursorPosition(PSnake.CurrentPosition.X, PSnake.CurrentPosition.Y);
+        Write(PSnake.Ico);
         CurrentCursorPos = PSnake.CurrentPosition;
+        Thread.Sleep(100);
+    }
+
+    Vector2 DirectionMove(ConsoleKey key)
+    {
+        Vector2 vector2;
+        if (key == ConsoleKey.W)
+        {
+            vector2 = new Vector2((int)XDirection.Stop, (int)YDirection.Up);
+            LastMove = vector2;
+            return vector2;
+        }
+        if (key == ConsoleKey.S)
+        {
+            vector2 = new Vector2((int)XDirection.Stop, (int)YDirection.Down);
+            LastMove = vector2;
+            return vector2;
+        } 
+        if (key == ConsoleKey.A)
+        {
+            vector2 = new Vector2((int)XDirection.Left, (int)YDirection.Stop);
+            LastMove = vector2;
+            return vector2;
+        }
+        if (key == ConsoleKey.D)
+        {
+            vector2 = new Vector2((int)XDirection.Right, (int)YDirection.Stop);
+            LastMove = vector2;
+            return vector2;
+        }
+        else
+            return LastMove;
     }
 
     void GameOver()
     {
-        Console.Clear();
-        Console.WriteLine(string.Format("Konie gry!\nUdało ci się zdobyć aż {0} pkt.\n\nGratulacje!", Score));
-        Console.ReadLine();
+        Clear();
+        WriteLine(string.Format("Koniec gry!\nUdało ci się zdobyć aż {0} pkt.\n\nGratulacje!", Score));
+        ReadLine();
     }
 
     /// <summary>
@@ -181,10 +207,10 @@ class Snake
     /// </summary>
     void Setup()
     {
-        Console.SetWindowSize(1, 1);
-        Console.SetBufferSize(Width, Height);
-        Console.SetWindowSize(Width, Height);
-        Console.Clear();
-        Console.CursorVisible = false;
+        SetWindowSize(1, 1);
+        SetBufferSize(Width, Height);
+        SetWindowSize(Width, Height);
+        Clear();
+        CursorVisible = false;
     }
 }
